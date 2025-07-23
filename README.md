@@ -8,12 +8,12 @@ The most common machine learning models and algorithms programmed from first pri
 | K-Nearest Neighbours         | Classification            | ✅        | TBR        |
 | K-Means                      | Clustering                | ✅        | TBR        |
 | Stochastic Gradient Descent  | Optimisation              | ✅        | TBR        |
-| Naive Bayes Classifier       | Classification            | ✅        | Medium     |
-| Decision Tree                | Classification/Regression | ✅        | Medium     |
-| Random Forest                | Classification/Regression | ✅        | Medium     |
-| Support Vector Machine       | Classification            | ❌        | Medium     |
-| Principal Component Analysis | Dimensionality Reduction  | ❌        | Medium     |
-| DBSCAN                       | Clustering                | ❌        | Medium     |
-| Gaussian Mixture Models      | Clustering (Probabilistic)| ❌        | Medium     |
-| Linear Discriminant Analysis | Classification            | ❌        | Medium     |
-| Gradient Boosting            | Classification/Regression | ❌        | High       |
+| Naive Bayes Classifier       | Classification            | ✅        | TBR        |
+| Decision Tree                | Classification/Regression | ✅        | TBR        |
+| Random Forest                | Classification/Regression | ✅        | TBR        |
+| Support Vector Machine       | Classification            | ⏳🚧      | Old code exists. Needs to be reviewed and rewritten to a higher standard|
+| Principal Component Analysis | Dimensionality Reduction  | ✅        | TBR        |
+| DBSCAN                       | Clustering                | ⏳🚧      | In progress. |
+| Gaussian Mixture Models      | Clustering (Probabilistic)| ⏳🚧      | In progress (put on hold). Need to formally explore Maximum Likelihood Estimation (MLE) theory. |
+| Linear Discriminant Analysis | Classification            | ❌        | Not started.    |
+| Gradient Boosting            | Classification/Regression | ❌        | Not started.    |
