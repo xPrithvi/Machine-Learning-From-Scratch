@@ -13,7 +13,7 @@ The most common machine learning models and algorithms programmed from first pri
 | Random Forest                | Classification/Regression | ✅        | TBR        |
 | Support Vector Machine       | Classification            | ⏳🚧      | Old code exists. Needs to be reviewed and rewritten to a higher standard|
 | Principal Component Analysis | Dimensionality Reduction  | ✅        | First principle derivation of the eigenvalue equation need to be added. |
-| DBSCAN                       | Clustering                | ⏳🚧      | In progress. |
+| DBSCAN                       | Clustering                | ✅        | Pseudo-code needs to be added for queuing algorithm used for cluster growth. |
 | Gaussian Mixture Models      | Clustering (Probabilistic)| ⏳🚧      | In progress (put on hold). Need to formally explore Maximum Likelihood Estimation (MLE) theory. |
 | Linear Discriminant Analysis | Classification            | ❌        | Not started.    |
 | Gradient Boosting            | Classification/Regression | ❌        | Not started.    |
