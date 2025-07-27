@@ -8,12 +8,12 @@ The most common machine learning models and algorithms programmed from first pri
 | K-Nearest Neighbours         | Classification            | ✅        | TBR        |
 | K-Means                      | Clustering                | ✅        | TBR        |
 | Stochastic Gradient Descent  | Optimisation              | ✅        | TBR        |
-| Naive Bayes Classifier       | Classification            | ✅        | TBR        |
-| Decision Tree                | Classification/Regression | ✅        | TBR        |
+| Naive Bayes Classifier       | Classification            | Categorical ✅, Multinomial ❌, Gaussian ❌ | TBR        |
+| Decision Tree                | Classification/Regression | Classifier ✅ Regressor  ⏳🚧      | TBR        |
 | Random Forest                | Classification/Regression | ✅        | TBR        |
-| Support Vector Machine       | Classification            | ⏳🚧      | Old code exists. Needs to be reviewed and rewritten to a higher standard|
+| Support Vector Machine       | Classification/Regression | ⏳🚧      | Old code exists. Needs to be reviewed and rewritten to a higher standard|
 | Principal Component Analysis | Dimensionality Reduction  | ✅        | First principle derivation of the eigenvalue equation need to be added. |
 | DBSCAN                       | Clustering                | ✅        | Pseudo-code needs to be added for queuing algorithm used for cluster growth. |
 | Gaussian Mixture Models      | Clustering (Probabilistic)| ⏳🚧      | In progress (put on hold). Need to formally explore Maximum Likelihood Estimation (MLE) theory. |
-| Linear Discriminant Analysis | Classification            | ❌        | Not started.    |
-| Gradient Boosting            | Classification/Regression | ❌        | Not started.    |
+| Linear Discriminant Analysis | Dimensionality Reduction  | ❌        | Not started.    |
+| Gradient Boosting            | Classification/Regression | ⏳🚧      | Basic algorithm written. Theory section needs to be fleshed out more. Decision Tree Regressor must be created before creating boosted forests.|
