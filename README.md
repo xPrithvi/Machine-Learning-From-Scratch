@@ -10,7 +10,7 @@ The most common machine learning models and algorithms programmed from first pri
 | Stochastic Gradient Descent  | Optimisation              | ✅        | TBR        |
 | Naive Bayes Classifier       | Classification            | Categorical ✅, Multinomial ❌, Gaussian ❌ | TBR        |
 | Decision Tree                | Classification/Regression | Classifier ✅ Regressor ⏳🚧 | TBR        |
-| Random Forest                | Classification/Regression | ✅        | TBR        |
+| Random Forest                | Classification/Regression | Bootstrap aggregated ✅, Rotation forest ❌, Extremely Randomised Trees (ERT) ❌ | TBR        |
 | Support Vector Machine       | Classification/Regression | ⏳🚧      | Old code exists. Needs to be reviewed and rewritten to a higher standard|
 | Principal Component Analysis | Dimensionality Reduction  | ✅        | First principle derivation of the eigenvalue equation need to be added. |
 | DBSCAN                       | Clustering                | ✅        | Pseudo-code needs to be added for queuing algorithm used for cluster growth. |
