@@ -16,4 +16,10 @@ The most common machine learning models and algorithms programmed from first pri
 | DBSCAN                       | Clustering                | ✅        | Pseudo-code needs to be added for queuing algorithm used for cluster growth. |
 | Gaussian Mixture Models      | Clustering (Probabilistic)| ⏳🚧      | In progress (put on hold). Need to formally explore Maximum Likelihood Estimation (MLE) theory. |
 | Linear Discriminant Analysis | Dimensionality Reduction  | ❌        | Not started.    |
-| Gradient Boosting            | Classification/Regression | ⏳🚧      | Basic algorithm written. Theory section needs to be fleshed out more. Decision Tree Regressor must be created before creating boosted forests.|
+| Gradient Boosting            | Classification/Regression | ⏳🚧      | Theory section written, but the model has not been implemented. |
+
+Current working on: Decision Trees 
+- [ ] Optimise the decision tree implementation for greater speed.
+- [ ] Write docstrings for all classes and methods.
+- [ ] Ensure model consistency across all notebooks.
+- [ ] Add CCP pruning and feature importance to the DecisionTreeRegressor model.
