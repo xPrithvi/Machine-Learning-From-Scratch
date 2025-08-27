@@ -8,9 +8,9 @@ The most common machine learning models and algorithms programmed from first pri
 | K-Nearest Neighbours         | Classification            | ✅        | TBR        |
 | K-Means                      | Clustering                | ✅        | TBR        |
 | Stochastic Gradient Descent  | Optimisation              | ✅        | TBR        |
-| Naive Bayes Classifier       | Classification            | Categorical ✅, Multinomial ❌, Gaussian ❌ | TBR        |
-| Decision Tree                | Classification/Regression | Classifier ✅, Regressor ✅, CCP Pruning ✅, Feature Importance ✅ | Speed and efficiently need to be optimised for usage in random forests. |
-| Random Forest                | Classification/Regression | Bootstrap aggregated ✅, Rotation forest ❌, Extremely Randomised Trees (ERT) ❌ | TBR        |
+| Naive Bayes Classifiers       | Classification            | Categorical ✅, Multinomial ❌, Gaussian ❌ | TBR        |
+| Decision Trees                | Classification/Regression | Classifier ✅, Regressor ✅, CCP Pruning ✅, Feature Importance ✅ | Speed and efficiently need to be optimised for usage in random forests. |
+| Random Forests                | Classification/Regression | Bootstrap aggregated ✅, Rotation forest ❌, Extremely Randomised Trees (ERT) ❌ | TBR        |
 | Support Vector Machine       | Classification/Regression | ⏳🚧      | Old code exists. Needs to be reviewed and rewritten to a higher standard. |
 | Principal Component Analysis | Dimensionality Reduction  | ✅        | First principle derivation of the eigenvalue equation need to be added. |
 | DBSCAN                       | Clustering                | ✅        | Pseudo-code needs to be added for queuing algorithm used for cluster growth. |
@@ -18,8 +18,8 @@ The most common machine learning models and algorithms programmed from first pri
 | Linear Discriminant Analysis | Dimensionality Reduction  | ❌        | Not started.    |
 | Gradient Boosting            | Classification/Regression | ⏳🚧      | Theory section written, but the model has not been implemented. |
 
-Current working on: Decision Trees 
+Current working on: Decision Trees and Random Forests
 - [ ] Optimise the decision tree implementation for greater speed.
 - [ ] Write docstrings for all classes and methods.
 - [ ] Ensure model consistency across all notebooks.
-- [ ] Add CCP pruning and feature importance to the DecisionTreeRegressor model.
+- [X] Add CCP pruning and feature importance to the DecisionTreeRegressor model.
