@@ -1,90 +1,195 @@
 # Importing,
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.datasets import load_iris
-import matplotlib.pyplot as plt
+import copy
 
 class DecisionTreeRegressor():
+    """The class for the DecisionTreeRegressor model. Includes CCP pruning and feature importance analysis."""
 
-    def __init__(self, max_depth):
-        """Constructor method for the DecisionTreeClassifier class. We simply create the class variables."""
+    def __init__(self, max_depth=None, min_samples_leaf=1, min_samples_split=2, criterion="MSE", feature_subsampling=False, label=False):
+        """Constructor method for the DecisionTreeRegressor class. We simply create the class variables."""
 
         # Class variables for the data and nodes,
-        self.X, self.y, self.nodes, self.leaves = None, None, None, None
+        self.X, self.y, self.tree_root = None, None, None
+        self.n_samples = None
+        self.model_score = None
+        self.ccp_alpha = None
+        self.label = "tree" if not label else label
 
         # Stopping criteria,
-        self.max_depth = max_depth
+        if max_depth is None:
+            self.max_depth = np.inf
+        else:
+            self.max_depth = max_depth
+        self.min_samples_leaf = min_samples_leaf
+        self.min_samples_split = min_samples_split
+
+        # Split criterion,
+        self.criterion = criterion
+        self.feature_subsampling = feature_subsampling
+        self.feature_idxs = None
+
+        # Feature importances vector,
+        self.feature_importances = None
+        self.feature_importances_idxs = None
 
         return None
-    
+
     def fit(self, X, y):
+        """Use this method to fit the tree to the training dataset."""
 
         # Assignment to class attributes,
         self.X, self.y = X, y
+        self.n_samples, self.n_features = X.shape[0], X.shape[1]
 
-        # Creating the root node,
-        root_node = Node(self.X, self.y, parent_node=None)
-        self.nodes, self.leaves = [root_node], [root_node]
+        # Storing the indices of the features,
+        self.feature_idxs = np.arange(start=0, stop=self.n_features, step=1)
+        self.n_sampled_features = int(np.ceil(np.sqrt(self.n_features))) # <-- Number of features selected if random features enabled.
 
-        # Growth algorithm,
-        for i in range(self.max_depth):
+        # Growing the tree,
+        self.tree_root = self._grow_tree(X=X, y=y, node_label="O", current_depth=0) # <-- The label "O" is for the root node.
 
-            # Creating new layer,
-            new_leaves = self._grow_tree()
+        return None
 
-            # Adding child nodes to list,
-            self.nodes.extend(new_leaves)
+    def predict(self, X):
+        """Wrapper method around _traverse_tree() for predictions."""
 
-        # Assigning predictions to leaves (terminate node),
-        for leaf_node in self.leaves:
-            leaf_node.prediction = np.mean(leaf_node.y)
+        # Traversing the tree,
+        preds = np.asarray([self._traverse_tree(x, self.tree_root) for x in X]) # <-- Starting at the root node.
 
-    @staticmethod
-    def _compute_SE(y_node):
-        return np.sum((y_node - np.mean(y_node))**2)
+        return preds
 
-    def _grow_tree(self):
+    def score(self, X, y):
+        """Computes the accuracy of the model on the given testing data. In the case of regression, the 
+        coefficient of determination or R^2 coefficient is calculated."""
 
-        # Placeholder list,
-        new_leaves = []
+        # Storing predictions as an array,
+        y_preds = self.predict(X)
 
-        # Looping through current leaves,
-        for node in self.leaves:
+        # Computing R2 coefficient as the score,
+        SS_res = np.sum((y - y_preds)**2)
+        SS_total = np.sum((y - np.mean(y))**2)
+        score = 1 - (SS_res/SS_total)
 
-            # Performing split,
-            child_node_left, child_node_right, valid_split = self._split(node.X, node.y, parent_node=node)
+        # Assigning score,
+        self.model_score = score
 
-            if valid_split:
-                # Assigning child nodes,
-                node.child_left, node.child_right, = child_node_left, child_node_right
+        return score
 
-                # Appending nodes to list,
-                new_leaves.extend([child_node_left, child_node_right])
-            else: 
-                # If no split occured, the node remains a leaf,
-                new_leaves.append(node)
+    def print_tree(self, structural=True):
+        """Prints the structure of the tree using _traverse_tree_print which traverses the tree."""
+        n_nodes = self._traverse_tree_print(node=self.tree_root, structural=structural)
+        print(f"Number of nodes: {n_nodes}")
+        return None
 
-        # Updating leaves,
-        self.leaves = new_leaves
+    def prune(self, alpha, inplace=True):
+        """Calling this function performs cost-complexity pruning on the existing tree or a copy based on 
+         a given hyperparameter alpha."""
 
-        return new_leaves
+        if inplace:
+            self._compute_cpp_info(node=self.tree_root)
+            self._prune_tree(node=self.tree_root, alpha=alpha)
+            self.ccp_alpha = alpha
+            return None
+        else:
+            clone_tree = copy.deepcopy(self) # <-- Copy of the tree is created.
+            self._compute_cpp_info(node=clone_tree.tree_root)
+            self._prune_tree(node=clone_tree.tree_root, alpha=alpha)
+            clone_tree.ccp_alpha = alpha
+            return clone_tree
+        
+    def compute_importances(self, norm=True):
+        """Call this function returns the importances of each feature as an array."""
+
+        # Initialising importances array,
+        self.feature_importances = np.zeros(shape=self.X.shape[1])
+
+        # Computing importances,
+        self._compute_importances(node=self.tree_root, prob_acc=1)
+
+        # Normalising importances (default behaviour),
+        if norm:
+            self.feature_importances = self.feature_importances/self.feature_importances.sum()
+
+        # Storing the sorted feature importances indices,
+        self.feature_importances_idxs = np.argsort(self.feature_importances)[::-1]
+
+        return self.feature_importances
+
+    def _grow_tree(self, X, y, node_label, current_depth):
+        """This function is recursively called and is responsible for the creation of the tree. The function is called every time we create a new node in the tree."""
+
+        # Creating node object,
+        current_node = Node(X, y, node_label)
+        current_node.impurity = self._compute_impurity(y_node=y)
+
+        """STOPPING CRITERIA: maximum depth reached."""
+        if current_depth == self.max_depth:
+
+            # Marking as leaf node,
+            current_node.is_leaf = True
+
+            # Computing prediction for leaf node,
+            current_node.prediction = self._compute_prediction(y_node=current_node.y)
+
+            # Returning leaf node,
+            return current_node
+        
+        """STOPPING CRITERIA: parent node has equal or fewer than min_samples_split number of data points."""
+        if len(y) < self.min_samples_split:
+            current_node.is_leaf = True
+            current_node.prediction = self._compute_prediction(y_node=current_node.y)
+            return current_node
+
+        # Splitting node,
+        decision, children_data, node_labels, valid_split = self._split(X, y, parent_node=current_node)
+
+        if valid_split: # <-- The case when we have a valid split.
+
+            # Assigning decision to current node,
+            current_node.decision = decision
+        
+            # Unpacking children data,
+            X_left, X_right, y_left, y_right = children_data
+            left_node_label, right_node_label = node_labels
+
+            # Creating subtrees,
+            current_depth += 1
+            current_node.child_left = self._grow_tree(X=X_left, y=y_left, node_label=left_node_label, current_depth=current_depth) # <-- We grow the branch from the left node first.
+            current_node.child_right = self._grow_tree(X=X_right, y=y_right, node_label=right_node_label, current_depth=current_depth) # <-- We backtrack and then grow the branches from the right nodes.
+
+            # Returning our current node,
+            return current_node
+
+        else: #<-- The case when we do NOT have a valid split,
+
+            # Our current node must be a leaf node,
+            current_node.is_leaf = True
+            current_node.prediction = self._compute_prediction(y_node=current_node.y)
+            return current_node
 
     def _split(self, X, y, parent_node):
         """Binary splits a parent node into two child nodes based on the decision that mimises the SSE (sum of squared errors) of the
-        child nodes."""
+        children nodes."""
 
         # Placeholder variables,
-        min_SSE = np.inf
+        min_impurity = np.inf
         split_threshold_value = None
-        found_valid_split = False
+        found_split = False
         X_best_left_split, X_best_right_split, y_best_left_split, y_best_right_split = None, None, None, None
 
-        # Double loop, first for each feature, second for each threshold value,
-        for feature_idx in range(X.shape[1]):
+        # Extract the SE of of parent node,
+        parent_impurity = parent_node.impurity
+        selected_feature_idxs = np.random.choice(self.feature_idxs, size=self.n_sampled_features, replace=True) if self.feature_subsampling else self.feature_idxs
 
-            # Extracting feature values and thresholds,
+        # Double loop, first for each feature, second for each threshold value,
+        for feature_idx in selected_feature_idxs:
+
+            # Extracting feature values,
             X_feature = X[:, feature_idx]
-            thresholds = np.unique(X_feature)
+            
+            # Thresholds taken as the midpoint between sorted values,
+            X_feature_sorted = np.sort(X_feature)
+            thresholds = np.unique((X_feature_sorted[:-1] + X_feature_sorted[1:]) / 2)
 
             for threshold_value in thresholds:
 
@@ -93,88 +198,258 @@ class DecisionTreeRegressor():
                 X_left_split, X_right_split = X[left_split_idxs], X[right_split_idxs]
                 y_left_split, y_right_split = y[left_split_idxs], y[right_split_idxs]
 
-                # Reject splits which result in empty child nodes,
-                if len(left_split_idxs) == 0 or len(right_split_idxs) == 0:
+                # Reject splits which result in child nodes having less data points that the minimum number,
+                if len(left_split_idxs) <= self.min_samples_leaf or len(right_split_idxs) <= self.min_samples_leaf:
                     continue
-                else:
-                    found_valid_split = True
 
-                # Compute SSE of child nodes,
-                children_SSE = self._compute_SE(y_node=y_left_split) + self._compute_SE(y_node=y_right_split)
-            
-                # Tracking maximum information gain,
-                if children_SSE < min_SSE:
+                # Compute weighted SSE of children nodes,
+                children_impurity = (len(y_left_split)/len(y))*self._compute_impurity(y_node=y_left_split) + (len(y_right_split)/len(y))*self._compute_impurity(y_node=y_right_split)
+
+                # Calculating the impurity decrease,
+                impurity_decrease = parent_impurity - children_impurity
+
+                # Tracking minimum SSE,
+                if children_impurity < min_impurity:
+
+                    # Reassigning minimum SSE,
+                    min_impurity = children_impurity
+                    parent_node.impurity_decrease = impurity_decrease
+                    found_split = True
 
                     # Updating nodes associated with the best split,
-                    max_gain, split_threshold_value, split_feature = children_SSE, threshold_value, feature_idx
+                    split_threshold_value, split_feature = threshold_value, feature_idx
                     X_best_left_split, X_best_right_split, y_best_left_split, y_best_right_split = X_left_split, X_right_split, y_left_split, y_right_split
 
-        # Creating node objects for the child nodes,
-        if found_valid_split:
-            child_node_left, child_node_right = Node(X_best_left_split, y_best_left_split, parent_node), Node(X_best_right_split, y_best_right_split, parent_node)
-            parent_node.child_left, parent_node.child_right = child_node_left, child_node_right
-            parent_node.decision = (split_feature, split_threshold_value)
-            return child_node_left, child_node_right, True
-        else:
-            return None, None, False
+        if found_split: # <-- Case 1: We have found a valid split.
 
-    def predict_sample(self, X_sample):
+            # Packaging data to return,
+            node_labels = ((parent_node.label + "L"), (parent_node.label + "R"))
+            decision = (split_feature, split_threshold_value)
+            children_data = (X_best_left_split, X_best_right_split, y_best_left_split, y_best_right_split)
 
-        # Starting node is the root node,
-        current_node = self.nodes[0]
+            # Assigning node decision,
+            parent_node.decision = decision
 
-        # Looping until we reach a terminal node (traversing the tree),
-        while current_node.decision is not None:
+            return decision, children_data, node_labels, found_split
+        else: #<-- Case 2: No valid split was found.
+            return None, None, None, found_split
 
-            # Extracting decision,
-            feature_idx, threshold_value = current_node.decision
+    def _traverse_tree(self, X_sample, node):
+        """Helper function for traversing the tree recurvisely in order to make predictions."""
 
-            # Making the decision,
-            if X_sample[feature_idx] <= threshold_value:
-                current_node = current_node.child_left
+        if node.is_leaf: # <-- Reached terminal node.
+            return node.prediction
+
+        else: # <-- Node has a decision.
+    
+            # Extracting decision information,
+            feature, feature_threshold = node.decision
+
+            # Making decision,
+            if X_sample[feature] <= feature_threshold:
+                return self._traverse_tree(X_sample=X_sample, node=node.child_left)
             else:
-                current_node = current_node.child_right
+                return self._traverse_tree(X_sample=X_sample, node=node.child_right)
 
-        # Returning prediction from the terminal node,
-        return current_node.prediction
+    def _traverse_tree_print(self, node, structural, current_depth=0):
+        """Traverses the tree via recursion."""
+
+        # Counting the current node,
+        node_count = 1
+
+        if structural:
+
+            # Printing maintains tree structure (pretty),
+            indent = "  " * current_depth
+            if node.is_leaf:
+                print(f"{indent}Leaf → Predict: {node.prediction}")
+            else:
+                print(f"{indent}If X[:, {node.decision[0]}] <= {node.decision[1]}")
+                node_count += self._traverse_tree_print(node.child_left, structural, current_depth + 1)
+                print(f"{indent}Else:")
+                node_count += self._traverse_tree_print(node.child_right, structural, current_depth + 1)
+
+        else:
+            if node.is_leaf:
+                print(f"Node: {node.label}, Prediction: {node.prediction}, Impurity: {node.impurity}")
+            else:
+                print(f"Node: {node.label}, Decision: {node.decision}")
+                node_count += self._traverse_tree_print(node.child_left, structural, current_depth + 1)
+                node_count += self._traverse_tree_print(node.child_right, structural, current_depth + 1)
+
+        # Returning node count,
+        return node_count
     
-    def score(self, X, y):
+    def _prune_tree(self, node, alpha):
+        """Recursive function which prunes the tree."""
 
-        # Storing predictions as an array,
-        y_preds = np.array([self.predict_sample(x) for x in X])
-
-        # Computing mean relative error,
-        score = np.mean(np.abs((y-y_preds)/y))
-
-        return score
-    
-    def info(self):
+        # If the current node is a leaf, we cannot prune it,
+        if node.is_leaf:
+            return
         
-        # Printing node info,
-        for node in self.nodes:
-            node.info(verbose=True)
+        if node.child_left is not None:
+            self._prune_tree(node.child_left, alpha)
+        if node.child_right is not None:
+            self._prune_tree(node.child_right, alpha)
 
-        return None
+        # If both children are leaf nodes, we now consider pruning the current node,
+        if node.child_left is not None and node.child_right is not None:
+            if node.child_left.is_leaf and node.child_right.is_leaf:
+
+                # Pruning logic,
+                if node.effective_cost <= alpha:
+
+                    # Cutting off branch,
+                    node.child_left, node.child_right = None, None
+
+                    # Converting internal node into leaf node,
+                    node.is_leaf = True
+                    node.prediction = self._compute_prediction(y_node=node.y)
+                    node.decision = None
+
+    def _compute_cpp_info(self, node):
+        """This method traverses the tree to compute the effective cost of each node which is required for cost-complexity pruning (CPP). It
+        uses post-order traversal which finds the deepest part of the tree and works its from up starting from the left."""
+
+        if node.is_leaf:
+        
+            # Computing risk,
+            node_risk = self._compute_node_risk(node)
+            return 1, node_risk
+
+        # Resetting counts,
+        n_leaves_accumulated, risk_accumlated = 0, 0
+
+        # Post-order computation,
+        subtree_nleaves_left, subtree_risk_left = self._compute_cpp_info(node.child_left)
+        subtree_nleaves_right, subtree_risk_right = self._compute_cpp_info(node.child_right)
+
+        # Computing number of leaves, risk and effective cost of subtree,
+        n_leaves_accumulated += (subtree_nleaves_left + subtree_nleaves_right)
+        risk_accumlated += (subtree_risk_left + subtree_risk_right)
+        node_risk = self._compute_node_risk(node) # <-- Computing the risk of the current node (root of current sub-tree)
+        effective_cost = (node_risk - risk_accumlated)/(n_leaves_accumulated - 1)
+
+        # Assigning node attributes,
+        node.effective_cost = effective_cost
+
+        return n_leaves_accumulated, risk_accumlated
+    
+    def _compute_importances(self, node, prob_acc):
+        """Recursive method for computing the feature importances."""
+
+        # Assigning the probability of the node,
+        node.prob = prob_acc
+
+        if node.is_leaf:
+            return 
+        else:
+            # Computing the importance contribution,
+            importance_contribution = prob_acc*node.impurity_decrease
+            feature_idx = int(node.decision[0])
+            self.feature_importances[feature_idx] += importance_contribution
+
+            # Computing probabilities,
+            n_parent, n_left, n_right = len(node.y), len(node.child_left.y), len(node.child_right.y)
+            prob_acc_left, prob_acc_right = prob_acc*(n_left/n_parent), prob_acc*(n_right/n_parent)
+
+            # Recursion,
+            self._compute_importances(node.child_left, prob_acc_left)
+            self._compute_importances(node.child_right, prob_acc_right)
+    
+    def _repr_html_(self):
+        """Compact HTML GUI as the object representation in Jupyter Notebook."""
+        html = f"""
+        <div style="
+            border:1px solid black;
+            border-radius:6px;
+            font-family:Arial, sans-serif;
+            font-size:12px;
+            line-height:1.2;
+            width:fit-content;
+            background:white;
+            color:black;
+            padding-left:8px;
+            padding-right:8px;
+        ">
+            <!-- Title bar -->
+            <i>{self.label}</i>
+            <div style="
+                background:#e0e0e0;
+                padding:3px 6px;
+                font-weight:bold;
+                border-bottom:1px solid black;
+                border-top-left-radius:6px;
+                border-top-right-radius:6px;
+                color:black;
+            ">
+                DecisionTreeRegressor
+                <div style="margin-top:2px;">
+                    <img src="decisiontree_icon.png" alt="tree icon" width="30" height="45">
+                </div>
+            </div>
+
+            <!-- Hyperparameters -->
+            <ul style="margin:4px 0 4px 16px; padding:0;">
+                <b>Hyperparameters:</b><br>
+                ccp_alpha:</b> {self.ccp_alpha}<br>
+                max_depth:</b> {self.max_depth}<br>
+                min_samples_leaf:</b> {self.min_samples_leaf}<br>
+                min_samples_split:</b> {self.min_samples_split}<br>
+                criterion: {self.criterion}<br>
+                feature_subsampling: {self.feature_subsampling}
+            </ul>
+
+            <!-- Divider -->
+            <div style="
+                border-top:1px solid #ccc;
+                margin:4px 0;
+            "></div>
+
+            <!-- Status and other info -->
+            <ul style="margin:4px 0 4px 16px; padding:0;">
+        """
+
+        if self.tree_root is None:
+            html += "<b>Status:</b> <span style='color:red;'>Not fitted</span>"
+        else:
+            html += "<b>Status:</b> <span style='color:green;'>Fitted</span><br>"
+            html += f"Score (R^2):</b> {self.model_score}<br>"
+            html += f"n_samples:</b> {self.n_samples}<br>"
+            html += f"n_features:</b> {self.n_features}<br>"
+            html += f"feature_importances_idxs:</b> {self.feature_importances_idxs}<br>"
+
+        html += "</ul></div>"
+        return html
+
+    def _compute_impurity(self, y_node):
+        if self.criterion == "SSE":
+            return np.sum((y_node - np.mean(y_node))**2)
+        elif self.criterion == "MSE":
+            return np.mean((y_node - np.mean(y_node))**2)
+        
+    def _compute_node_risk(self, node):
+        return (len(node.y)/len(self.y))*node.impurity
+
+    @staticmethod
+    def _compute_prediction(y_node):
+        return np.mean(y_node)
 
 class Node():
     """The class for node objects. Essentially used as a container."""
 
-    def __init__(self, X, y, parent_node):
+    def __init__(self, X, y, node_label):
         """Constructor method for the node. Class variables contain node information and encode its location in the tree
         required for predictions."""
 
         # Node information,
         self.X, self.y = X, y
+        self.is_leaf = False
         self.decision = None
         self.prediction = None
+        self.impurity = None
+        self.impurity_decrease = None
+        self.effective_cost = None
 
         # Encodes location in the tree,
-        self.parent, self.child_left, self.child_right = parent_node, None, None
-
-    def info(self, verbose=False):
-        """Returns information about the node."""
-
-        if verbose:
-            print(f"Parent: {self.parent}, Decision: {self.decision}, Prediction: {self.prediction}")
-
-        return self.parent, self.decision, self.prediction
+        self.label, self.child_left, self.child_right = node_label, None, None
