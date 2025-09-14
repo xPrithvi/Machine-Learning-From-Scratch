@@ -11,15 +11,15 @@ The most common machine learning models and algorithms programmed from first pri
 | Naive Bayes Classifiers       | Classification            | Categorical ✅, Multinomial ❌, Gaussian ❌ | TBR        |
 | Decision Trees                | Classification/Regression | Classifier ✅, Regressor ✅, CCP Pruning ✅, Feature Importance ✅ | Speed and efficiently need to be further optimised for production-level. |
 | Random Forests                | Classification/Regression | Bootstrap aggregated ✅, Rotation forest ❌, Extremely Randomised Trees (ERT) ❌ | TBR        |
-| Support Vector Machine       | Classification/Regression | ⏳🚧      | Old code exists. Needs to be reviewed and rewritten to a higher standard. |
+| Support Vector Machine       | Classification/Regression | ⏳🚧 Hard-margin SVC ✅, Soft-margin SVC ❌ Kernel Trick ❌ OvO ❌ OvR ❌ | CURRENTLY WORKING ON |
 | Principal Component Analysis | Dimensionality Reduction  | ✅        | First principle derivation of the eigenvalue equation need to be added. |
 | DBSCAN                       | Clustering                | ✅        | Pseudo-code needs to be added for queuing algorithm used for cluster growth. |
 | Gaussian Mixture Models      | Clustering (Probabilistic)| ⏳🚧      | In progress (put on hold). Need to formally explore Maximum Likelihood Estimation (MLE) theory. |
 | Linear Discriminant Analysis | Dimensionality Reduction  | ❌        | Not started.    |
 | Gradient Boosting            | Classification/Regression | ⏳🚧      | Theory section written, but the model has not been implemented. |
 
-Current working on: Decision Trees and Random Forests
-- [ ] Optimise the decision tree implementation for greater speed.
-- [ ] Write docstrings for all classes and methods.
-- [ ] Ensure model consistency across all notebooks.
-- [X] Add CCP pruning and feature importance to the DecisionTreeRegressor model.
+Current working on: Support Vector Machines
+- [ ] Implement the kernel trick for SVCs.
+- [ ] Implement a soft-margin SVC using the dual formulation.
+- [ ] Implement a soft-margin SVC using SGD and Hinge loss.
+- [ ] Combine multiple SVCs (OvO and OvR) to handle classification with C>2 number of classes.
