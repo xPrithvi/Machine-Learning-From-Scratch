@@ -11,7 +11,7 @@ The most common machine learning models and algorithms programmed from first pri
 | Naive Bayes Classifiers       | Classification            | Categorical ✅, Multinomial ❌, Gaussian ❌ | TBR        |
 | Decision Trees                | Classification/Regression | Classifier ✅, Regressor ✅, CCP Pruning ✅, Feature Importance ✅ | Speed and efficiently need to be further optimised for production-level. |
 | Random Forests                | Classification/Regression | Bootstrap aggregated ✅, Rotation forest ❌, Extremely Randomised Trees (ERT) ❌ | TBR        |
-| Support Vector Machine       | Classification/Regression | Hard-margin SVC ✅, Soft-margin SVC ⏳🚧 Kernel Trick OvO ❌ OvR ❌ | CURRENTLY WORKING ON |
+| Support Vector Machine       | Classification/Regression | Hard-margin SVC ✅, Soft-margin SVC ✅ Kernel Trick OvO ❌ OvR ✅ | CURRENTLY WORKING ON |
 | Principal Component Analysis | Dimensionality Reduction  | ✅        | First principle derivation of the eigenvalue equation need to be added. |
 | DBSCAN                       | Clustering                | ✅        | Pseudo-code needs to be added for queuing algorithm used for cluster growth. |
 | Gaussian Mixture Models      | Clustering (Probabilistic)| ⏳🚧      | In progress (put on hold). Need to formally explore Maximum Likelihood Estimation (MLE) theory. |
