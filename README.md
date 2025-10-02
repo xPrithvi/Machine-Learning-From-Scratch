@@ -20,6 +20,6 @@ The most common machine learning models and algorithms programmed from first pri
 
 Current working on: Support Vector Machines
 - [ ] Implement the kernel trick for SVCs.
-- [ ] Implement a soft-margin SVC using the dual formulation.
+- [X] Implement a soft-margin SVC using the dual formulation.
 - [ ] Implement a soft-margin SVC using SGD and Hinge loss.
 - [ ] Combine multiple SVCs (OvO and OvR) to handle classification with C>2 number of classes.
